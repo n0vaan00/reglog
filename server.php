@@ -13,31 +13,7 @@ $db = mysqli_connect('localhost', 'root', '', 'n0vaan00');
 if (!$db) {
     die("Error connecting to database: " . mysqli_connect_error());
 }
-// define global constant
-define('BASE_URL', 'http://localhost/reglog/');
 
-// create tables
-function createTable(PDO $db){
-    $sql = "CREATE TABLE IF NOT EXISTS users(
-        firstname varchar(50) NOT NULL,
-        lastname varchar(50) NOT NULL,
-        username varchar(50) NOT NULL,
-        password varchar(200) NOT NULL,
-        PRIMARY KEY (username)
-        )";
-    
-    $db->exec($sql);
-}
-function createTable2(PDO $db){
-$sql2 = "CREATE TABLE IF NOT EXISTS contact (
-    username varchar(50) NOT NULL,
-    email varchar(100),
-    phone varchar(20),
-    FOREIGN KEY (username) REFERENCES users(username)
-    )";
-
-$dbcon->exec($sql2);
-}
 
 // REGISTER USER
 if (isset($_POST['reg_user'])) {
@@ -46,7 +22,6 @@ if (isset($_POST['reg_user'])) {
   $lastname = mysqli_real_escape_string($db, $_POST['lastname']);
   $username = mysqli_real_escape_string($db, $_POST['username']);
   $email = mysqli_real_escape_string($db, $_POST['email']);
-  $phone = mysqli_real_escape_string($db, $_POST['phone']);
   $password_1 = mysqli_real_escape_string($db, $_POST['password_1']);
   $password_2 = mysqli_real_escape_string($db, $_POST['password_2']);
 
@@ -65,16 +40,22 @@ if (isset($_POST['reg_user'])) {
   $user = mysqli_fetch_assoc($result);
   
 
+  if ($user) { // if user exists
     if ($user['username'] === $username) {
       array_push($errors, "Username already exists");
     }
+
+    if ($user['email'] === $email) {
+      array_push($errors, "email already exists");
+    }
+  }
 
   // Finally, register user if there are no errors in the form
   if (count($errors) == 0) {
   	$password = md5($password_1);//encrypt the password before saving in the database
 
-  	$query = $db->prepare("INSERT INTO users (firstname, lastname, username,password) VALUES(?, ?, ?, ?)");
-    $query->bind_param("ss", $firstname, $lastname, $username, $password);
+  	$query = $db->prepare("INSERT INTO users (firstname, lastname, username, password) VALUES(?, ?, ?, ?)");
+    $query->bind_param("ssss", $firstname, $lastname, $username, $password);
     $query->execute();
 
     $query2 = $db->prepare("INSERT INTO contact (username, email, phone) VALUES(?, ?, ?)");
@@ -82,7 +63,6 @@ if (isset($_POST['reg_user'])) {
     $query2->execute();
   	
   	$_SESSION['username'] = $_POST["username"];
-    $_SESSION['firstname'] = $firstname;
   	$_SESSION['success'] = "You are now logged in";
   	header('location: index.php');
   }
@@ -134,9 +114,9 @@ function getInfo() {
 if (isset($_POST['edit_phone'])) {
     // receive all input values from the form
     $username= $_SESSION['username'];
-    $phone = $_POST['phone'];
+    $phoneedit = $_POST['phone'];
     
-        $query = "UPDATE contact SET phone='$phone' WHERE username = '$username'";
+        $query = "UPDATE contact SET phone='$phoneedit' WHERE username = '$username'";
         $result=mysqli_query($db, $query);
 
         if($result)
